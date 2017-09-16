@@ -1,37 +1,28 @@
-// dpotrf_ak1.cpp -- This program computes the Cholesky factorization of a real symmetric positive definite matrix.
+// dpotrf_ak1.cpp -- This program computes the Cholesky factorization of a real, symmetric, positive definite, matrix.
 //
-// The main routine is a translation of the FORTRAN routine
-// DPOTRF.F, from Univ. of Tennessee, Univ. of California Berkeley and NAG Ltd.
-//
-// This translation makes a copy of the original input array and works with the copy.
-// This way, the original matrix is saved.
-//
-// This translation uses the upper triangular part of the matrix, computing and outputing the upper
-// half of the factorization such that A = U^T * U
+// The main routine is a severely edited translation of the LAPACK routine DPOTRF.F:
+// it uses unblocked code, it computes the upper triangular matrix U only, and it uses uniform increments of 1.
+// All other options that are part of DPOTRF.F were not translated into this C++ program.
 //
 // References:
 //
+// E. Anderson, Z. Bai, C. Bischof, S. Blackford, J. Demmel, J. Dongarra, J. Du Croz, A. Greenbaum,
+// S.Hammarling, A. McKenney, and D.Sorensen.
+//		"LAPACK Users' Guide, Third Edition"
+//		SIAM, Philadelphia
+//		1999
 // 
-// 
-// 
-// 
+// This program uses the upper triangular part of the A matrix, computing and outputting an upper
+// triangular matrix U such that A = U^T * U. The strictly lower triangular half of the A
+// matrix is not referenced.
 //
-// 
-// 
-// 
-// 
+// This program makes a copy of the original input array and works with the copy.
+// The original matrix is not changed in this program.
 //
-// 
-// 
-// 
-// 
-// 
-// 
-//
-// To distinguish this version of fmin from other translations,
+// To distinguish this version of dpotrf from other translations,
 // an '_ak1' suffix has been appended to its name.
 //
-// 27 August 2017
+// 15 September 2017
 //
 // Written in Microsoft Visual Studio Express 2013 for Windows Desktop
 //
@@ -67,45 +58,45 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info);
 void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 
 	// For this program, it is assumed that UPLO = 1, so it will be hard-coded to use the upper
-	// triangular part of the matrix
+	// triangular part of the matrix. And the code will be unblocked: use DPOTF2.
 
 	// On output:
 	// info = 0:		successful exit
 	// info = k > 0:	the leading minor of order k is not positive definite,
 	//					and the factorization could not be completed.
 
-	// Use unblocked code: call DPOTF2
-
-	int i, j, jj, jy;
-	double ajj, ddot;
-	bool ffFlag = 0;
+	int i = N - 1, j, jj;
+	double ajj = A_Matrix[0][0], ddot;
 
 	// BEGIN DPOTF2
 
-	for (j = 0; j < N; ++j){
+	// Deal with j = 0 case outside of main loop
+	
+	if (ajj <= 0){
+		*info = 1;
+		return;
+	} // End if ajj <= 0
+
+	A_Matrix[0][0] = ajj = sqrt(ajj);
+
+	while (i > 0) A_Matrix[0][i--] /= ajj;
+
+	// Now deal with the rest of the j cases
+
+	for (j = 1; j < N; ++j){
 
 		ajj = A_Matrix[j][j];
 		ddot = 0.0;
 
-		if (ffFlag){
-
-			// DDOT
-			i = j;
-			do {
-				--i;
-				ddot += A_Matrix[i][j] * A_Matrix[i][j];
-			} while (i > 0);
-			// End DDOT
-
-			ajj -= ddot;
-
-		} // End if ffFlag
-
-		//else  ffFlag = 1;
-
-		//for (i = 0; i < j; ++i)  ddot += A_Matrix[i][j] * A_Matrix[i][j];  // DDOT
-
-		//cout << "j = " << j << "      " << "ddot = " << ddot << endl;
+		// DDOT
+		i = j;
+		do {
+			--i;
+			ddot += A_Matrix[i][j] * A_Matrix[i][j];
+		} while (i > 0);
+		// End DDOT
+		
+		ajj -= ddot;
 
 		if (ajj <= 0){
 			A_Matrix[j][j] = ajj;
@@ -121,34 +112,19 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 
 			// BEGIN DGEMV
 
-			//if (j > 0) {
+			// Start the operations. In this version, the elements of A are accessed sequentially
+			// with one pass through A.
 
-				// Start the operations. In this version, the elements of A are accessed sequentially
-				// with one pass through A.
+			// Since this program assumes we are working with the upper diagonal matrix of A,
+			// form y = alpha*A^T * x + y
 
-				// Since this program assumes we are working with the upper diagonal matrix of A,
-				// form y = alpha*A^T * x + y
+			for (jj = j + 1; jj < N; ++jj){
 
-				//if (j1Flag){
-				if (ffFlag){
+				ddot = 0.0;
+				for (i = 0; i < j; ++i) ddot += A_Matrix[i][jj] * A_Matrix[i][j];  // A * X
+				A_Matrix[j][jj] -= ddot;
 
-					//jy = j + 1;
-					//for (jj = 0; jj < (N - 1 - j); ++jj){
-					for (jj = j + 1; jj < N; ++jj){
-						ddot = 0.0;
-						for (i = 0; i < j; ++i){
-							//ddot += A_Matrix[i][jy] * A_Matrix[i][j];  // A * X
-							ddot += A_Matrix[i][jj] * A_Matrix[i][j];  // A * X
-						} // End for i
-						//A_Matrix[j][jy] -= ddot;
-						A_Matrix[j][jj] -= ddot;
-						//++jy;
-					} // End for jj
-
-				} // End if ffFlag
-				else ffFlag = 1;
-
-			//} // End if j > 0
+			} // End for jj
 
 			// END DGEMV
 
@@ -167,10 +143,10 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 int main() {
 	char rflag;			//Readiness flag
 
-	cout << "                       dpotrf_ak1 (27 August 2017)" << endl;
+	cout << "                       dpotrf_ak1 (15 September 2017)" << endl;
 	cout << "======================================================================" << endl << endl;
 	cout << "This program computes the Cholesky factorization of a real symmetric matrix [A]." << endl << endl;
-	cout << "The upper half of the factorization is computed such that A = U^T * U." << endl;
+	cout << "An upper triangular matrix U is computed such that A = U^T * U." << endl;
 	cout << "The strictly lower triangular part of A is not referenced." << endl << endl;
 	cout << "The dimension of this matrix, as well as the entries of the matrix should have" << endl;
 	cout << "been saved beforehand in a file named inReSymA.txt" << endl << endl;
