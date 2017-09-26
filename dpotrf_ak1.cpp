@@ -22,7 +22,7 @@
 // To distinguish this version of dpotrf from other translations,
 // an '_ak1' suffix has been appended to its name.
 //
-// 15 September 2017
+// 25 September 2017
 //
 // Written in Microsoft Visual Studio Express 2013 for Windows Desktop
 //
@@ -65,8 +65,8 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 	// info = k > 0:	the leading minor of order k is not positive definite,
 	//					and the factorization could not be completed.
 
-	int i = N - 1, j, jj;
-	double ajj = A_Matrix[0][0], ddot;
+	int NM1 = N - 1,  i = NM1, j, JM1, jj;
+	double ajj = A_Matrix[0][0], ddot, dum1;
 
 	// BEGIN DPOTF2
 
@@ -75,7 +75,7 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 	if (ajj <= 0){
 		*info = 1;
 		return;
-	} // End if ajj <= 0
+	}
 
 	A_Matrix[0][0] = ajj = sqrt(ajj);
 
@@ -92,7 +92,8 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 		i = j;
 		do {
 			--i;
-			ddot += A_Matrix[i][j] * A_Matrix[i][j];
+			dum1 = A_Matrix[i][j];
+			ddot += dum1 * dum1;
 		} while (i > 0);
 		// End DDOT
 		
@@ -102,13 +103,13 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 			A_Matrix[j][j] = ajj;
 			*info = j + 1;
 			return;
-		} // End if ajj <= 0
+		}
 
 		A_Matrix[j][j] = ajj = sqrt(ajj);
 
-		// Compute elements J+1:N of row J
+		// Compute elements J+1 to N of row J
 
-		if (j < (N - 1)){
+		if (j < NM1){
 
 			// BEGIN DGEMV
 
@@ -118,20 +119,29 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 			// Since this program assumes we are working with the upper diagonal matrix of A,
 			// form y = alpha*A^T * x + y
 
-			for (jj = j + 1; jj < N; ++jj){
+			JM1 = j - 1;
+			dum1 = A_Matrix[JM1][j];
 
-				ddot = 0.0;
-				for (i = 0; i < j; ++i) ddot += A_Matrix[i][jj] * A_Matrix[i][j];  // A * X
-				A_Matrix[j][jj] -= ddot;
+			for (jj = NM1; jj > j; --jj){
+
+				i = JM1;
+				ddot = dum1 * A_Matrix[i][jj];
+
+				while (i > 0){
+					--i;
+					ddot += A_Matrix[i][jj] * A_Matrix[i][j];  // A * X
+				}
+
+				A_Matrix[j][jj] = (A_Matrix[j][jj] - ddot) / ajj;
 
 			} // End for jj
 
 			// END DGEMV
 
 			// DSCAL
-			for (i = (j + 1); i < N; ++i) A_Matrix[j][i] /= ajj;
+			//for (i = (j + 1); i < N; ++i) A_Matrix[j][i] /= ajj;
 
-		} // End if (j < (N - 1))
+		} // End if (j < NM1)
 
 	} // End for j
 
@@ -143,7 +153,7 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 int main() {
 	char rflag;			//Readiness flag
 
-	cout << "                       dpotrf_ak1 (15 September 2017)" << endl;
+	cout << "                       dpotrf_ak1 (25 September 2017)" << endl;
 	cout << "======================================================================" << endl << endl;
 	cout << "This program computes the Cholesky factorization of a real symmetric matrix [A]." << endl << endl;
 	cout << "An upper triangular matrix U is computed such that A = U^T * U." << endl;
