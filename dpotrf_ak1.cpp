@@ -138,9 +138,6 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 
 			// END DGEMV
 
-			// DSCAL
-			//for (i = (j + 1); i < N; ++i) A_Matrix[j][i] /= ajj;
-
 		} // End if (j < NM1)
 
 	} // End for j
@@ -153,10 +150,10 @@ void dpotrf_ak1(const int N, C2DArray& A_Matrix, int *info){
 int main() {
 	char rflag;			//Readiness flag
 
-	cout << "                       dpotrf_ak1 (25 September 2017)" << endl;
+	cout << "                       dpotrf_ak1 (10 November 2017)" << endl;
 	cout << "======================================================================" << endl << endl;
-	cout << "This program computes the Cholesky factorization of a real symmetric matrix [A]." << endl << endl;
-	cout << "An upper triangular matrix U is computed such that A = U^T * U." << endl;
+	cout << "This program computes the Cholesky factorization of a real symmetric matrix, A." << endl << endl;
+	cout << "An upper triangular matrix, U, is computed such that A = U^T * U." << endl;
 	cout << "The strictly lower triangular part of A is not referenced." << endl << endl;
 	cout << "The dimension of this matrix, as well as the entries of the matrix should have" << endl;
 	cout << "been saved beforehand in a file named inReSymA.txt" << endl << endl;
